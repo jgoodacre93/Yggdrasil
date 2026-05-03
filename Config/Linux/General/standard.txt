@@ -5,7 +5,7 @@ bat
 charon-cmd
 curl
 docker.io
-docker-compose
+docker-compose-plugin
 eza
 fish
 g++
@@ -61,4 +61,3 @@ defaultcreds-cheat-sheet
 
 # Wget
 https://sh.rustup.rs rust Installer
-

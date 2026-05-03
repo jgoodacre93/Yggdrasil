@@ -7,9 +7,6 @@
   <a href="https://www.python.org/downloads/release/python-3110/">
     <img alt="python" src="https://img.shields.io/badge/python-3.11-blue.svg?logo=python&logoColor=cyan" />
   </a>
-  <a href="https://visitor-badge.lithub.cc/badge?page_id=jarl-bjoern/yggdrasil.visitor-badge&left_text=visitors">
-    <img alt="visitors" src="https://visitor-badge.lithub.cc/badge?page_id=jarl-bjoern/yggdrasil.visitor-badge&left_text=visitors" />
-  </a>
 </div>
 <div align="center">
   <a href="https://GitHub.com/jarl-bjoern/yggdrasil/">
@@ -34,13 +31,11 @@
   </a>
 </div><br/>
 
-The program was developed to automate the process of installing missing tools, as well as the configuration of kali Linux after a new installation to save time.<br />
-
-The name `Yggdrasil` comes from norse mythology and is the world tree, here the name is quite appropriate for the concept of the program, as it is geared for several cybersecurity categories.<br />
+`Yggdrasil`, the world tree in Norse mythology, symbolizes connection and structure — an idea that reflects this program's purpose. Designed for multiple cybersecurity domains, it automates the installation of missing tools and streamlines the configuration of Kali Linux after a fresh setup, saving valuable time.<br />
 <br />
 
 > [!IMPORTANT]
-> <strong>Please do `not` use the program `for illegal intentions`.</strong><br />
+> <strong>Do `not` use this program `for illegal activities`.</strong><br />
 <br />
 
 ## ❗ News
@@ -60,7 +55,10 @@ The name `Yggdrasil` comes from norse mythology and is the world tree, here the 
 - New Features:
   - `npm` was added as a new download category
   - `smb` was added to the hardening options
+  - `-FTS` parameter was added to use `--break-system-packages` for pip packages
 - New Improvements:
+  - Downloader:
+    - To speed up the installation process, the timer for packages that have already been installed has been reduced.
   - Automation script:
     - Automation script to install `sliver` was added
     - Automation script to install `covenant` was added
@@ -94,7 +92,7 @@ The official documentation could be found at the following link.
 
 
 ## 📃 Features
-The following link lists all the features that the tool offers.
+The following link contains all features of `Yggdrasil`.
 
 <div align="center">
 ➡️ <a href="https://github.com/Jarl-Bjoern/Yggdrasil/wiki/%F0%9F%93%83-Features-overview">
@@ -104,7 +102,7 @@ The following link lists all the features that the tool offers.
 
 
 ## ☢️ Cheat Sheet
-The following link contains the official cheat sheet for the tool.
+The following link contains the official cheat sheet for `Yggdrasil`.
 
 <div align="center">
 ➡️ <a href="https://github.com/Jarl-Bjoern/Yggdrasil/wiki/%E2%98%A2%EF%B8%8F-Cheat-Sheet">
@@ -142,4 +140,4 @@ But also the developer would like to thank the people who do not have a GitHub a
 <br />
 
 # ⚠️ Remark
-It should be said that the scripts are still under development, but already allow an easier start to perform e.g. as a penetration tester or digital forensics, certain pre-settings.
+It should be noted that the scripts are still under active development; however, they already provide a simplified starting point for tasks such as penetration testing or digital forensics by offering predefined configurations and setup options.

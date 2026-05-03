@@ -28,6 +28,7 @@ SMB_Hosts=""
 Switch_APACHE=false
 Switch_BloodHound=false
 Switch_BRANCH=false
+Switch_Break_Packages=false
 Switch_Cargo=false
 Switch_CRON=false
 Switch_CUSTOM_CONFIGS=false
@@ -49,6 +50,7 @@ Switch_Skip_Hardening=false
 Switch_Skip_Basic_Installation=false
 Switch_Skip_Installation=false
 Switch_Skip_URLS=false
+Switch_Skip_Sleep=false
 Switch_SMB=false
 #Switch_SQUID=false
 Switch_SSH=false
@@ -170,6 +172,9 @@ PURPLE='\033[0;35m'
 UNDERLINE='\033[0;4m'
 NOCOLOR='\033[0m'
 
+# Dump pip package information
+pip3 freeze > /tmp/pip_packages.txt
+
 # Functions
 function initials {
         echo "💀💀💀💀💀💀💀💀💀💀💀💀💀💀💀💀💀💀💀💀💀💀💀💀💀💀💀💀💀💀💀💀💀"
@@ -183,6 +188,14 @@ function initials {
 
 function clearing {
         sleep 2 ; clear ; initials
+}
+
+function custom_sleep {
+		if [[ "$Switch_Skip_Sleep" = false ]]; then
+			sleep 1
+		else
+			sleep 0.1
+		fi
 }
 
 function Change_Hostname {
@@ -340,12 +353,17 @@ function Automation_Config_Check() {
    	done < "$input"
 }
 
+function Skip_Message() {
+        echo -e "${RED}$1${NOCOLOR} $2" | tee -a "$FULL_PATH/yggdrasil.log"
+        Switch_Skip_Sleep=true
+}
+
 function Download_Commander() {
 	if [[ $Switch_IGNORE = false ]]; then
 		if [[ $Command =~ "apt" ]]; then
 			SECOND_Command="$Command $line || (apt --fix-broken install -y && $Command $line)"
 			if [[ $(which "$line") || "$(apt-cache policy $line | head -n2 | grep "[0-9]" | awk '{print $2}')" ]]; then
-			    echo -e "${RED}$line${NOCOLOR} is already installed."
+			    Skip_Message "$line" "is already installed."
 			else
 			    eval "$SECOND_Command"
 			fi
@@ -354,21 +372,33 @@ function Download_Commander() {
 			FILE_BRANCH=$(echo "$line" | cut -d" " -f2)
 			Check_For_Skip_Download $FILE_URL
 			if [[ "$Switch_Skip_Git_Download" == false ]]; then
-                    eval "$Command $FILE_BRANCH $FILE_URL"
-    			else
-                    Tool_Name=$(echo "$line" | awk '{print $1}' | rev | cut -d '/' -f1 | rev | tr -d '\r')
-       	            echo -e "${RED}$Tool_Name${NOCOLOR} already exists." | tee -a "$FULL_PATH/yggdrasil.log"
-    			fi
+				eval "$Command $FILE_BRANCH $FILE_URL"
+			else
+				Tool_Name=$(echo "$line" | awk '{print $1}' | rev | cut -d '/' -f1 | rev | tr -d '\r')
+				Skip_Message "$Tool_Name" "already exists."
+			fi
 		elif [[ $Command =~ "cargo" ]]; then
 			eval "$Command $line" || source "$HOME/.cargo/env" && eval "$Command $line"
+		elif [[ $Command =~ "docker" ]]; then
+				if ! docker images | grep -q "$line"; then
+					eval "$Command $line"
+				else
+					Skip_Message "$line" "is already installed."
+				fi
+        elif [[ $Command =~ "pip3" ]]; then
+			if [[ ! $(grep "^$line==" /tmp/pip_packages.txt) ]]; then
+				eval "$Command $line"
+			else
+				Skip_Message "$line" "is already installed."
+			fi
 		else
 			Check_For_Skip_Download $line
 			if [[ "$Switch_Skip_Git_Download" == false ]]; then
 				eval "$Command $line"
-    			else
+    		else
 				Tool_Name=$(echo "$line" | rev | cut -d '/' -f1 | rev | tr -d '\r')
-       				echo -e "${RED}$Tool_Name${NOCOLOR} already exists." | tee -a "$FULL_PATH/yggdrasil.log"
-    			fi
+				Skip_Message "$Tool_Name" "already exists."
+    		fi
 
 			if [[ "$Command" =~ "git clone" && "$Switch_GO" == true ]]; then
 				Temp_File_Name=$(echo "$line" | rev | cut -d '/' -f1 | rev | tr -d '\r')
@@ -459,7 +489,12 @@ function File_Installer() {
                 elif [[ $line = "# Docker" ]]; then
                         Command="docker pull" ; Skip=true ; Switch_WGET=false ; Switch_BRANCH=false ; Switch_GO=false ; Switch_BloodHound=false
                 elif [[ $line = "# Python" ]]; then
-                        Command="pip3 install" ; Skip=true ; Switch_WGET=false ; Switch_BRANCH=false ; Switch_GO=false ; Switch_BloodHound=false
+                        if [[ $Switch_Break_Packages == true ]]; then
+                            Command="pip3 install --break-system-packages"
+                        else
+                            Command="pip3 install"
+                        fi
+                        Skip=true ; Switch_WGET=false ; Switch_BRANCH=false ; Switch_GO=false ; Switch_BloodHound=false
                 elif [[ $line = "# NPM" ]]; then
                         Command="npm install --global" ; Skip=true ; Switch_WGET=false ; Switch_BRANCH=false ; Switch_GO=false ; Switch_BloodHound=false
                 elif [[ $line = "# Git" ]]; then
@@ -509,15 +544,16 @@ function File_Installer() {
                                         fi
                                         if [ "$Switch_Skip_Hardening" = true ]; then
                                                 if [[ $line =~ "iptables-persistent" || $line =~ "netfilter-persistent" || $line =~ "charon" || $line =~ "strongswan" || $line =~ "openconnect" || $line =~ "opensc" ]]; then
-                                                        echo -e "${RED}$line${NOCOLOR} was skipped" | tee -a "$FULL_PATH/yggdrasil.log"
+                                                        echo -e "${RED}$line${NOCOLOR} was skipped." | tee -a "$FULL_PATH/yggdrasil.log"
                                                 else
                                                         Download_Commander
-                                                        sleep 1
+														custom_sleep
                                                 fi
                                         else
                                                 Download_Commander
-                                                sleep 1
+												custom_sleep
                                         fi
+										Switch_Skip_Sleep=false
                                 else
                                         FILE=$(echo "$line" | cut -d" " -f1)
                                         FILE_NAME=$(echo "$line" | cut -d" " -f2)
@@ -761,18 +797,20 @@ function Category_Loop() {
 
 # Checking_Parameters
 for arg; do
-        if [[ $arg == "-sH" ]]; then
-                Switch_Skip_Hardening=true
-        elif [[ $arg == "-sC" ]]; then
-                Switch_Skip_Configs=true
-        elif [[ $arg == "-aL" ]]; then
-                Switch_License=true
-        elif [[ $arg == "-v" ]]; then
-                Switch_Verbose=true
+	if [[ $arg == "-sH" ]]; then
+		Switch_Skip_Hardening=true
+	elif [[ $arg == "-sC" ]]; then
+		Switch_Skip_Configs=true
+	elif [[ $arg == "-aL" ]]; then
+    	Switch_License=true
+	elif [[ $arg == "-v" ]]; then
+    	Switch_Verbose=true
 	elif [[ $arg == "-sI" ]]; then
  		Switch_Skip_Installation=true
-        elif [[ $arg == "-sU" ]]; then
-                Switch_Skip_URLS=true
+	elif [[ $arg == "-sU" ]]; then
+		Switch_Skip_URLS=true
+	elif [[ $arg == "-FTS" ]]; then
+		Switch_Break_Packages=true
 	elif [[ $arg == "-sbI" ]]; then
  		Switch_Skip_Basic_Installation=true
         elif [[ "$(echo "$arg" | awk -F "$(echo "$arg" | rev | cut -c5- | rev)" '{print $2}')" == ".-aW" ]]; then
@@ -1906,6 +1944,7 @@ if [[ ! -d "/opt/ssl" ]]; then
 fi
 sudo openssl req -nodes -x509 -newkey rsa:2048 -keyout /opt/ssl/pentest-key.pem -out /opt/ssl/pentest-cert.pem -sha512 -days 365 -subj '/CN=pentest-kali' 2>/dev/null
 
+rm -f /tmp/pip_packages.txt
 sudo python3 "$FULL_PATH/Resources/Python/clean.py" "$OPT_Path"
 Change_Hostname "$HOST_Pentest"
 echo -e "\n${CYAN}---------------------------------------------------------------------------------${NOCOLOR}\n"
@@ -1923,4 +1962,3 @@ if [[ $Switch_Skip_URLS == false && $Switch_URL != false ]]; then
                 done
         fi
 fi
-
